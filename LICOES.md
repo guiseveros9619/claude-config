@@ -23,3 +23,5 @@ sem motivo. Lição de um projeto só vai para aquele projeto.
 
 - Limite do Fable derruba todos os subagentes dele de uma vez (429) → relance com `model: "opus"`.
 - Subagente que só grava o relatório no fim perde tudo se for interrompido → peça para gravar cedo e ir completando.
+- Worktrees com `node_modules` por junção compartilham um diretório só: `npm install` interrompido nele poda pacotes de todos (sumiu o vitest) → para um pacote avulso, `npm pack` + `tar -x` direto na pasta; reparo = `npm install` no worktree de referência.
+- Hook de pré-commit que roda a suíte inteira trava frota em worktree com CRLF (`core.autocrlf=true`): shebang + CRLF quebra o vitest, teste que compara SQL falha → `.gitattributes` com `eol=lf` para `*.sql`/`*.mjs` antes de lançar a frota.
