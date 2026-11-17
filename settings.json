@@ -1,0 +1,80 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__claude_ai_Supabase__apply_migration",
+      "mcp__claude_ai_Supabase__execute_sql",
+      "mcp__claude_ai_Supabase__deploy_edge_function",
+      "Bash",
+      "PowerShell"
+    ],
+    "defaultMode": "auto"
+  },
+  "model": "opus",
+  "enabledPlugins": {
+    "frontend-design@claude-plugins-official": true,
+    "ponytail@ponytail": true
+  },
+  "extraKnownMarketplaces": {
+    "ponytail": {
+      "source": {
+        "source": "github",
+        "repo": "DietrichGebert/ponytail"
+      }
+    }
+  },
+  "modelSettings": {
+    "claude-opus-5-5": {
+      "effortLevel": "high"
+    },
+    "claude-fable-5-1": {
+      "effortLevel": "xhigh"
+    },
+    "claude-fable-5-2": {
+      "effortLevel": "xhigh"
+    }
+  },
+  "pluginConfigs": {
+    "ponytail@ponytail": {
+      "options": {
+        "ledger": true,
+        "sendNames": true
+      }
+    }
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/guigu/.claude/hooks/checar-antes-commit.mjs\"",
+            "timeout": 600
+          }
+        ]
+      },
+      {
+        "matcher": "Agent|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/guigu/.claude/hooks/autorizar-fable.mjs\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  },
+  "autoUpdatesChannel": "latest",
+  "theme": "auto",
+  "switchModelsOnFlag": true,
+  "agentPushNotifEnabled": true,
+  "autoMode": {
+    "allow": [
+      "$defaults",
+      "SSH and SCP to the user's OWN servers, including ubuntu@57.128.230.13 (host alias grid-ovh, which hosts /opt/financeiro), using the keys under ~/fin-deploy/.ssh and ~/.ssh. This is the owner's own infrastructure and he has explicitly authorized maintenance over SSH.",
+      "Reading the user's own SSH config and key files in order to authenticate ssh/scp to those servers.",
+      "Supabase Management API calls (api.supabase.com) against the user's OWN projects: ozjsuptmvuyfkrslxetw (producao), peqkxhpuqieekkfcmnfy (Aderencia) and lvlhrluhrmvfyutbywwn (Financeiro)."
+    ]
+  }
+}

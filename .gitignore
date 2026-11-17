@@ -1,0 +1,14 @@
+# Lista do que entra no backup (todo o resto da pasta fica de fora:
+# credenciais, histórico, sessões, cache, plugins baixados).
+/*
+!/.gitignore
+!/CLAUDE.md
+!/LICOES.md
+!/settings.json
+!/agents/
+!/hooks/
+!/scripts/
+!/padrao/
+!/skills/
+/skills/*
+!/skills/fluxo-dev/
