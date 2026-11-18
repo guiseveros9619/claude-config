@@ -10,7 +10,8 @@ sem motivo. Lição de um projeto só vai para aquele projeto.
 - `sed -i` troca CRLF por LF em repositório com `autocrlf=true` → edite com Edit ou preserve CRLF de propósito.
 - `s.replace(a, b)` do JS com `$'`, `` $` `` ou `$&` em `b` corrompe o arquivo → use `s.replace(a, () => b)` ou `split/join`.
 - PowerShell 5.1: nomes de variável não diferenciam maiúsculas (`$k` = `$K`); `.ps1` com acento sem BOM é lido errado → evite acento em script.
-- Não há Python nem LibreOffice; há Node e Excel (via COM, com `NumberFormatLocal` pt-BR).
+- Há Python 3.13 (`C:\Python313`, pacotes em `--user`; `python -I` os esconde), Node, ffmpeg e Excel (via COM, com `NumberFormatLocal` pt-BR); não há LibreOffice.
+- Máquina com 7,6 GB de RAM quase toda ocupada e disco C: perto de cheio: modelo grande baixado sem conferir espaço lota o disco e não carrega (`mkl_malloc`) → `df -h /c` e memória livre antes de baixar; transcrição local = faster-whisper `small`, com o áudio entregue pelo ffmpeg como numpy (o PyAV novo quebra o decodificador dele).
 - Chrome headless não emula celular com `--window-size` → `puppeteer-core` com `setViewport`.
 
 ## Ferramentas e serviços
