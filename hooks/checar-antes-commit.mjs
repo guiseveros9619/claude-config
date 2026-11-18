@@ -50,7 +50,12 @@ try {
   const passos = [];
   if (scripts.typecheck) passos.push(["typecheck", "npm run typecheck"]);
   else if (existsSync(join(raiz, "tsconfig.json"))) passos.push(["typecheck", "npx --no-install tsc --noEmit"]);
-  if (scripts.test && !/no test specified/i.test(scripts.test)) passos.push(["testes", "npm test"]);
+  // Vitest: só os testes ligados aos arquivos alterados (a suíte inteira de projeto grande passa do
+  // tempo limite e carrega vermelho de ambiente que não é do commit). Outros runners: npm test.
+  const alterados = [...new Set(arquivos)].filter((f) => CODIGO.test(f) && existsSync(join(raiz, f)));
+  if (scripts.test && /\bvitest\b/.test(scripts.test)) {
+    if (alterados.length) passos.push(["testes", `npx --no-install vitest related --run --hookTimeout=120000 ${alterados.map((f) => `"${f}"`).join(" ")}`]);
+  } else if (scripts.test && !/no test specified/i.test(scripts.test)) passos.push(["testes", "npm test"]);
   if (passos.length === 0) process.exit(0);
 
   if (!existsSync(join(raiz, "node_modules"))) {
