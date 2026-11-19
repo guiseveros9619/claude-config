@@ -4,16 +4,37 @@
 // pode travar commits em todos os projetos.
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 
 const CODIGO = /\.(ts|tsx|js|jsx|mjs|cjs|sql|vue|svelte|py)$/i;
 
-function sh(cmd, cwd, timeout = 540_000) {
+function sh(cmd, cwd, timeout = 540_000, extra = {}) {
   return spawnSync(cmd, {
     cwd, shell: true, encoding: "utf8", timeout,
-    env: { ...process.env, CI: "true", FORCE_COLOR: "0" },
+    env: { ...process.env, CI: "true", FORCE_COLOR: "0", ...extra },
     maxBuffer: 50 * 1024 * 1024,
   });
+}
+
+// "TZ=UTC vitest run" -> { TZ: "UTC" }: o prefixo de variável não funciona no cmd do Windows,
+// então ele vira env do processo.
+function envDoScript(script) {
+  const env = {};
+  let s = String(script).trim(), m;
+  while ((m = s.match(/^([A-Za-z_][A-Za-z0-9_]*)=(\S+)\s+/))) { env[m[1]] = m[2]; s = s.slice(m[0].length); }
+  return env;
+}
+
+// Pasta do package.json mais próximo do arquivo, sem sair da raiz (monorepo: o workspace dele).
+function pacoteDe(raiz, arquivo) {
+  let d = dirname(join(raiz, arquivo));
+  while (d.length >= raiz.length) {
+    if (existsSync(join(d, "package.json"))) return d;
+    const cima = dirname(d);
+    if (cima === d) break;
+    d = cima;
+  }
+  return raiz;
 }
 
 function bloquear(msg) {
@@ -54,16 +75,33 @@ try {
   // tempo limite e carrega vermelho de ambiente que não é do commit). Outros runners: npm test.
   const alterados = [...new Set(arquivos)].filter((f) => CODIGO.test(f) && existsSync(join(raiz, f)));
   if (scripts.test && /\bvitest\b/.test(scripts.test)) {
-    if (alterados.length) passos.push(["testes", `npx --no-install vitest related --run --hookTimeout=120000 ${alterados.map((f) => `"${f}"`).join(" ")}`]);
-  } else if (scripts.test && !/no test specified/i.test(scripts.test)) passos.push(["testes", "npm test"]);
+    if (alterados.length) passos.push(["testes", `npx --no-install vitest related --run --hookTimeout=120000 ${alterados.map((f) => `"${f}"`).join(" ")}`, raiz, envDoScript(scripts.test)]);
+  } else {
+    // Monorepo: a raiz só delega. Roda o vitest related em cada workspace que tem arquivo alterado.
+    const grupos = new Map();
+    for (const f of alterados) {
+      const pkg = pacoteDe(raiz, f);
+      if (pkg === raiz) continue;
+      if (!grupos.has(pkg)) grupos.set(pkg, []);
+      grupos.get(pkg).push(relative(pkg, join(raiz, f)));
+    }
+    let achouVitest = false;
+    for (const [pkg, fs] of grupos) {
+      const t = JSON.parse(readFileSync(join(pkg, "package.json"), "utf8")).scripts?.test ?? "";
+      if (!/\bvitest\b/.test(t)) continue;
+      achouVitest = true;
+      passos.push([`testes (${relative(raiz, pkg)})`, `npx --no-install vitest related --run --hookTimeout=120000 ${fs.map((f) => `"${f}"`).join(" ")}`, pkg, envDoScript(t)]);
+    }
+    if (!achouVitest && scripts.test && !/no test specified/i.test(scripts.test)) passos.push(["testes", "npm test"]);
+  }
   if (passos.length === 0) process.exit(0);
 
   if (!existsSync(join(raiz, "node_modules"))) {
     bloquear(`Commit bloqueado: não há node_modules em ${raiz}. Rode "npm install" (worktree novo precisa) e tente de novo.`);
   }
 
-  for (const [nome, comando] of passos) {
-    const r = sh(comando, raiz);
+  for (const [nome, comando, cwd = raiz, extra = {}] of passos) {
+    const r = sh(comando, cwd, 540_000, extra);
     if (r.error?.code === "ETIMEDOUT" || r.signal) {
       bloquear(`Commit bloqueado: ${nome} passou do tempo limite (${comando}). Rode-o à mão e confira.`);
     }
