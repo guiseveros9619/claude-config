@@ -34,3 +34,5 @@ sem motivo. Lição de um projeto só vai para aquele projeto.
 - Disco C: cheio (o arquivo de troca do Windows cresce para 20+ GB quando a memória acaba) mata `gh run watch` com "not enough space", sem relação com o CI → acompanhe com `gh run view --json status,conclusion` em laço, sem log grande.
 - Portão de CI "não pode piorar" pode checar mais do que o hook local (ex.: hook roda só tsc, CI roda eslint): antes de push que é deploy, rode localmente TODOS os passos do workflow de CI.
 - Arquivo numerado compartilhado entre sessões paralelas (ex.: `decisoes.md` com D01, D02…): releia o ÚLTIMO número imediatamente antes de acrescentar (outras sessões escrevem no meio); acrescentar com número guardado de leituras antigas duplica IDs (18/11/2026).
+- Teste-guarda que conta texto por regex (catraca/baseline) dá número diferente em checkout Windows (CRLF) e na CI (LF): normalize 
+ antes de contar e gere a base já normalizada. E teste com data fixa perto de uma janela ("até N dias") quebra sozinho com o calendário: use a data de hoje.
