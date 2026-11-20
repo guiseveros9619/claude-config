@@ -5,6 +5,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const CODIGO = /\.(ts|tsx|js|jsx|mjs|cjs|sql|vue|svelte|py)$/i;
 
@@ -100,9 +101,22 @@ try {
     bloquear(`Commit bloqueado: não há node_modules em ${raiz}. Rode "npm install" (worktree novo precisa) e tente de novo.`);
   }
 
+  // Projetos em que TESTE que estoura o tempo só avisa (decisão do dono, 20/11/2026): lá a suíte ligada a uma peça central
+  // passa de 30 min e o CI obrigatório da main é o juiz. Lista de trechos da URL do origin em checar-antes-commit.liberar-tempo.json.
+  let liberaTempoDosTestes = false;
+  try {
+    const lista = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), "checar-antes-commit.liberar-tempo.json"), "utf8"));
+    const origem = sh("git remote get-url origin", raiz, 20_000).stdout?.trim() ?? "";
+    liberaTempoDosTestes = Array.isArray(lista) && lista.some((trecho) => origem.includes(trecho));
+  } catch { /* sem a lista, nenhum projeto libera */ }
+
   for (const [nome, comando, cwd = raiz, extra = {}] of passos) {
     const r = sh(comando, cwd, 540_000, extra);
     if (r.error?.code === "ETIMEDOUT" || r.signal) {
+      if (liberaTempoDosTestes && nome.startsWith("testes")) {
+        process.stderr.write(`[checar-antes-commit] AVISO: ${nome} passou do tempo limite; liberado neste projeto (o CI obrigatório julga). Rode à mão os testes do que mudou.\n`);
+        continue;
+      }
       bloquear(`Commit bloqueado: ${nome} passou do tempo limite (${comando}). Rode-o à mão e confira.`);
     }
     if (r.status !== 0) {
