@@ -101,8 +101,10 @@ try {
     bloquear(`Commit bloqueado: não há node_modules em ${raiz}. Rode "npm install" (worktree novo precisa) e tente de novo.`);
   }
 
-  // Projetos em que TESTE que estoura o tempo só avisa (decisão do dono, 20/11/2026): lá a suíte ligada a uma peça central
-  // passa de 30 min e o CI obrigatório da main é o juiz. Lista de trechos da URL do origin em checar-antes-commit.liberar-tempo.json.
+  // Projetos em que TESTE ou TYPECHECK que estoura o tempo só avisa (decisões do dono, 20/11/2026 para os testes e 23/11/2026
+  // para o typecheck): lá a suíte ligada a uma peça central passa de 30 min, o typecheck do monorepo passa de 9 min com a
+  // máquina carregada, e o CI obrigatório da main é o juiz. Falha de verdade (status ≠ 0) continua bloqueando.
+  // Lista de trechos da URL do origin em checar-antes-commit.liberar-tempo.json.
   let liberaTempoDosTestes = false;
   try {
     const lista = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), "checar-antes-commit.liberar-tempo.json"), "utf8"));
@@ -113,8 +115,8 @@ try {
   for (const [nome, comando, cwd = raiz, extra = {}] of passos) {
     const r = sh(comando, cwd, 540_000, extra);
     if (r.error?.code === "ETIMEDOUT" || r.signal) {
-      if (liberaTempoDosTestes && nome.startsWith("testes")) {
-        process.stderr.write(`[checar-antes-commit] AVISO: ${nome} passou do tempo limite; liberado neste projeto (o CI obrigatório julga). Rode à mão os testes do que mudou.\n`);
+      if (liberaTempoDosTestes && (nome.startsWith("testes") || nome === "typecheck")) {
+        process.stderr.write(`[checar-antes-commit] AVISO: ${nome} passou do tempo limite; liberado neste projeto (o CI obrigatório julga). Rode à mão o ${nome} do que mudou.\n`);
         continue;
       }
       bloquear(`Commit bloqueado: ${nome} passou do tempo limite (${comando}). Rode-o à mão e confira.`);
